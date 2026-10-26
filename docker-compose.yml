@@ -21,6 +21,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    extra_hosts:
+      # Docker Desktop resolves this automatically; this also enables the
+      # host-run Claude subscription gateway on Linux Docker Engine.
+      - "host.docker.internal:host-gateway"
     environment:
       ARTEX_PG_DSN: postgres://${POSTGRES_USER:-artex}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-artex}?sslmode=disable
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
