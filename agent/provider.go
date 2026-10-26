@@ -137,7 +137,7 @@ func compactionConfig(windowTokens int) *compaction.Config {
 
 // FromEnv resolves the LLM provider config:
 //
-//	ARTEX_LLM_PROVIDER = anthropic|openai (default: inferred from keys)
+//	ARTEX_LLM_PROVIDER = anthropic|openai|openai-responses|claude (default: inferred from keys)
 //	ARTEX_LLM_MODEL    = model id        (default: per provider)
 //	ARTEX_LLM_BASE_URL = endpoint        (optional)
 //	ARTEX_LLM_PROXY    = proxy URL        (optional; http/https/socks5)
@@ -166,6 +166,20 @@ func FromEnv() (Config, bool) {
 		Stream: !isFalsy(os.Getenv("ARTEX_LLM_STREAM")),
 	}
 	switch prov {
+	case "claude":
+		// Claude is authenticated by the locally installed Claude Code CLI, not
+		// by an Anthropic API key. The local subscription gateway ignores this
+		// marker; norma requires a non-empty credential to build an OpenAI client.
+		c.Format = llm.FormatOpenAI
+		c.APIKey = "subscription"
+		if c.BaseURL == "" {
+			c.BaseURL = "http://host.docker.internal:8790/v1"
+		}
+		if c.Model == "" {
+			c.Model = "claude"
+		}
+		// The local bridge returns only after `claude -p` has completed.
+		c.Stream = false
 	case "openai":
 		c.Format = llm.FormatOpenAI
 		c.APIKey = oaiKey

@@ -139,6 +139,16 @@ Upstream provides several methods: an install script (`./install.sh`), precompil
 
 **LLM:** `export ANTHROPIC_API_KEY=sk-...` (or `OPENAI_API_KEY`), or enter it on the UI's "LLM settings" page. Optional environment variables: `ARTEX_LLM_PROVIDER` / `ARTEX_LLM_MODEL` / `ARTEX_LLM_BASE_URL` / `ARTEX_LLM_PROXY`. To use a domestic or open model, point `ARTEX_LLM_BASE_URL` at an OpenAI-compatible endpoint.
 
+### Claude subscription (no API key)
+
+ARTEX can use the Claude Code subscription already logged into the Docker host. The gateway runs on the host, so it uses Claude Code's normal credential storage and no authentication cache or API key is copied into a container.
+
+1. Install Claude Code on the host and run `claude login`.
+2. Start the gateway in a trusted workspace: `go run ./cmd/claude-subscription-gateway -workdir ./workspace`.
+3. Set `ARTEX_LLM_PROVIDER=claude` in `.env`, then start ARTEX with `docker compose up`.
+
+The gateway listens only on `127.0.0.1:8790`. It calls `claude -p` with the workspace as its working directory and has no streaming support. Claude executes its own shell tools, so ARTEX's per-tool graph and approval telemetry does not cover Claude-originated tool activity; retain the normal API providers when those controls are required.
+
 **Output language:** this edition forces user-facing output into the selected language (English by default) via a small, code-fixed directive appended to each role's system prompt (it does not translate the reasoning body). Switch languages in Settings, or adapt that directive in `agent/prompt.go` (`langDirective`).
 
 **Concurrency:** the number of worker agents spawned per task is adjustable under "System settings" (default 3).
