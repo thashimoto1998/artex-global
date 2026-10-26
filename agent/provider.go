@@ -137,7 +137,7 @@ func compactionConfig(windowTokens int) *compaction.Config {
 
 // FromEnv resolves the LLM provider config:
 //
-//	ARTEX_LLM_PROVIDER = anthropic|openai (default: inferred from keys)
+//	ARTEX_LLM_PROVIDER = anthropic|openai|openai-responses|codex (default: inferred from keys)
 //	ARTEX_LLM_MODEL    = model id        (default: per provider)
 //	ARTEX_LLM_BASE_URL = endpoint        (optional)
 //	ARTEX_LLM_PROXY    = proxy URL        (optional; http/https/socks5)
@@ -166,6 +166,22 @@ func FromEnv() (Config, bool) {
 		Stream: !isFalsy(os.Getenv("ARTEX_LLM_STREAM")),
 	}
 	switch prov {
+	case "codex":
+		// Codex is authenticated by the locally installed Codex CLI, not by an
+		// OpenAI API key. The subscription gateway deliberately ignores this
+		// marker; it exists only because norma's OpenAI provider requires a
+		// non-empty credential before it will construct a client.
+		c.Format = llm.FormatOpenAI
+		c.APIKey = "subscription"
+		if c.BaseURL == "" {
+			c.BaseURL = "http://codex-gateway:8789/v1"
+		}
+		if c.Model == "" {
+			c.Model = "codex"
+		}
+		// The local bridge returns a completed response after `codex exec` exits;
+		// it intentionally does not emulate an SSE stream.
+		c.Stream = false
 	case "openai":
 		c.Format = llm.FormatOpenAI
 		c.APIKey = oaiKey

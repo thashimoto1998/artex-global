@@ -139,6 +139,16 @@ Upstream provides several methods: an install script (`./install.sh`), precompil
 
 **LLM:** `export ANTHROPIC_API_KEY=sk-...` (or `OPENAI_API_KEY`), or enter it on the UI's "LLM settings" page. Optional environment variables: `ARTEX_LLM_PROVIDER` / `ARTEX_LLM_MODEL` / `ARTEX_LLM_BASE_URL` / `ARTEX_LLM_PROXY`. To use a domestic or open model, point `ARTEX_LLM_BASE_URL` at an OpenAI-compatible endpoint.
 
+### Codex subscription (no API key)
+
+ARTEX can use an authenticated local Codex CLI instead of an OpenAI API key. This is intended for a single trusted machine; do **not** expose the gateway port or copy your Codex credentials to an untrusted host.
+
+1. Install the Codex CLI on the Docker host and run `codex login` (choose **Sign in with ChatGPT**). If your login uses the OS keychain, configure Codex to use file credentials first (`cli_auth_credentials_store = "file"`) so the container can read the login cache.
+2. Create a `workspace/` directory next to `docker-compose.yml`. Codex uses this as its working directory.
+3. Add `ARTEX_LLM_PROVIDER=codex` and `ARTEX_CODEX_AUTH_FILE=/Users/you/.codex/auth.json` to `.env`, then run `docker compose --profile codex up --build`.
+
+The included `codex-gateway` service mounts only the host's file-based Codex login cache read-only and calls `codex exec`; it never accepts or persists an API key. The bridge is deliberately non-streaming and Codex executes its own shell tools, so ARTEX's per-tool graph/approval telemetry is not available for Codex-originated tool activity. Keep the standard API providers for workflows that require that telemetry.
+
 **Output language:** this edition forces user-facing output into the selected language (English by default) via a small, code-fixed directive appended to each role's system prompt (it does not translate the reasoning body). Switch languages in Settings, or adapt that directive in `agent/prompt.go` (`langDirective`).
 
 **Concurrency:** the number of worker agents spawned per task is adjustable under "System settings" (default 3).
