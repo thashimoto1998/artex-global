@@ -1,4 +1,18 @@
 services:
+  codex-gateway:
+    profiles: ["codex"]
+    build:
+      context: .
+      dockerfile: Dockerfile.codex-gateway
+    environment:
+      # Only the host's file-based Codex auth cache is mounted, read-only.
+      # Refresh it by running `codex login` on the host, never through ARTEX.
+      CODEX_HOME: /tmp/codex
+    volumes:
+      - ${ARTEX_CODEX_AUTH_FILE:?Set ARTEX_CODEX_AUTH_FILE to your Codex auth.json}:/tmp/codex/auth.json:ro
+      - ./workspace:/workspace
+    restart: unless-stopped
+
   postgres:
     image: postgres:16-alpine
     environment:
